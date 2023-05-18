@@ -1,0 +1,440 @@
+---
+title: "Stack Overflow Analysis"
+author: "Marcos Garcia"
+date: "2023-05-18"
+output: 
+  html_document:
+    theme: cerulean
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Initial Steps
+
+```{r}
+#Setting a global variable for my data
+load("myWorkSpace.RData")
+MyData <- survey_results_public_correct
+```
+
+```{r, include=FALSE}
+
+
+
+# Load Libraries we are going to use
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(stringr)
+library(quantmod)
+library(priceR)
+library(treemap)
+library(RColorBrewer)
+library(maps)
+library(countrycode)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+```
+
+## Where did people take the Survey from
+
+In this analysis, we want to know where the survey responses came from. To do so, we will first clean the data, then analyze it by counting the number of responses from each country, and finally visualize the top 30 countries using a treemap. 
+
+**Step 1: Data Cleaning**
+
+```{r}
+# First, we define our color palette using RColorBrewer
+color_palette <- brewer.pal(8, "Set3")
+
+# Clean the Country data in 'MyData' dataframe
+# Trim leading or trailing white spaces
+MyData$Country <- trimws(MyData$Country)  
+
+# Replace any missing country values with "Unknown"
+MyData$Country[is.na(MyData$Country)] <- "Unknown" 
+```
+
+**Step 2: Data Processing**
+
+```{r}
+# Count the number of responses from each country
+country_counts <- table(MyData$Country)
+
+# Convert the table to a data frame for easier manipulation and plotting
+country_counts_df <- as.data.frame(country_counts)
+names(country_counts_df) <- c("Country", "Count")
+
+# Filter the data to get the top 30 countries
+top_countries <- country_counts_df[order(-country_counts_df$Count),][1:30,]
+
+```
+
+**Step 3: Data Visualization**
+
+```{r}
+# Create a new color palette for our visualization
+color_palette <- brewer.pal(8, "Set2")
+
+# Use the 'treemap' function to create a treemap of the top 30 countries
+treemap(
+  top_countries,
+  index = c("Country", "Count"),
+  vSize = "Count",
+  title = "Top 30 Countries where the results are from",
+  fontsize.labels = c(15, 12),
+  fontcolor.labels = c("white", "white"),
+  align.labels = list(c("center", "center"), c("right", "bottom")),
+  overlap.labels = 0.5,
+  inflate.labels = F,
+  palette = color_palette
+)
+
+```
+
+## Top 10 Most Popular Programming languages
+
+In this analysis, we aim to find the top 10 programming languages used by respondents in our survey data. The analysis will be done in three steps: data transformation, data analytics, and data visualization.
+
+**Step 1: Data Transformation**
+
+```{r}
+# Split the 'LanguageHaveWorkedWith' column at every semicolon
+split_langs <- strsplit(MyData$LanguageHaveWorkedWith, split = ";")
+
+# Unlist to create a single vector of languages
+unlisted_langs <- unlist(split_langs)
+```
+
+**Step 2: Data Processing**
+
+```{r}
+# Count the number of times each language appears
+lang_counts <- table(unlisted_langs)
+
+# Calculate the total count of all languages
+total_count <- sum(lang_counts)
+
+# Sort in descending order and take the top 10
+top_langs <- sort(lang_counts, decreasing = TRUE)[1:10]
+
+# Convert to data frame for plotting
+top_langs_df <- as.data.frame(table(unlisted_langs))
+names(top_langs_df) <- c("language", "count")
+
+# Filter to only include top languages
+top_langs_df <- top_langs_df[top_langs_df$language %in% names(top_langs), ]
+
+# Calculate percentages
+top_langs_df$percentage <- (top_langs_df$count / total_count) * 100
+
+# Reorder languages by count in ascending order for better visualization
+top_langs_df$language <- factor(top_langs_df$language, levels = rev(names(top_langs)))
+
+```
+
+**Step 3: Data Visualization**
+
+```{r}
+# Plot a horizontal bar chart of the top languages by usage percentage
+ggplot(top_langs_df, aes(y = language, x = percentage)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_text(aes(label = paste0(round(percentage, 1), "%")), hjust = -0.1, size = 3.5) +
+  labs(y = "Programming Language", x = "Percentage (%)", title = "Top 10 Programming Languages by Usage Percentage") +
+  theme_minimal() + theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+This process results in a clear bar chart that displays the top 10 programming languages based on usage percentages among survey respondents. 
+
+## Top 10 Programing Languages Developers want to use
+
+In this analysis, our objective is to determine the top 10 programming languages that developers are interested in learning in 2023. We will carry out this analysis in three main steps: data transformation, data analytics, and data visualization.
+
+**Step 1: Data Cleaning**
+
+```{r}
+# Split the 'LanguageWantToWorkWith' column at every semicolon
+split_langs1 <- strsplit(MyData$LanguageWantToWorkWith, split = ";")
+
+# Unlist to create a single vector of languages
+unlisted_langs1 <- unlist(split_langs1)
+```
+
+**Step 2: Data Processing**
+
+```{r}
+# Count the number of times each language appears
+lang_counts1 <- table(unlisted_langs1)
+
+# Calculate the total count of all languages
+total_count1 <- sum(lang_counts1)
+
+# Sort in descending order and take the top 10
+top_langs1 <- sort(lang_counts1, decreasing = TRUE)[1:10]
+
+# Convert to data frame for plotting
+top_langs_df1 <- as.data.frame(table(unlisted_langs1))
+names(top_langs_df1) <- c("language", "count")
+
+# Filter to only include top languages
+top_langs_df1 <- top_langs_df1[top_langs_df1$language %in% names(top_langs1), ]
+
+# Calculate percentages
+top_langs_df1$percentage <- (top_langs_df1$count / total_count1) * 100
+
+# Reorder languages by count in ascending order for better visualization
+top_langs_df1$language <- factor(top_langs_df1$language, levels = rev(names(top_langs1)))
+
+```
+
+**Step 3: Data Visualization**
+
+```{r}
+# Plot a horizontal bar chart of the top languages that developers want to use in 2023
+ggplot(top_langs_df1, aes(y = language, x = percentage)) +
+  geom_bar(stat = "identity", fill = "lightblue") +
+  geom_text(aes(label = paste0(round(percentage, 1), "%")), hjust = -0.1, size = 3.5) +
+  labs(y = "Programming Language", x = "Percentage (%)", title = "Top 10 Programming Languages that developers want to use in 2023") +
+  theme_minimal() + theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+This process generates a bar chart displaying the top 10 programming languages that developers are interested in learning based on their share of mentions among survey respondents.
+
+## How many respondents are working remotely
+
+In this analysis, we want to examine the distribution of work modes among our survey respondents. This will be done in three main steps: data cleaning, data analytics, and data visualization.
+
+**Step 1: Data Cleaning**
+
+```{r}
+# Remove rows where the 'RemoteWork' field is NA or blank
+MyData <- MyData[!is.na(MyData$RemoteWork) & MyData$RemoteWork != "",]
+```
+
+**Step 2: Data Processing**
+
+```{r}
+# Get counts of each category
+remote_counts <- table(MyData$RemoteWork)
+
+# Convert to data frame for plotting
+remote_counts_df <- as.data.frame(remote_counts)
+names(remote_counts_df) <- c("RemoteWork", "Count")
+
+
+```
+
+**Step 3: Data Visualization**
+
+```{r}
+# Create a pie chart to visualize the distribution of work modes
+ggplot(remote_counts_df, aes(x = "", y = Count, fill = RemoteWork)) +
+  geom_bar(width = 1, stat = "identity", color = "white") +
+  coord_polar("y", start = 0) +
+  scale_fill_brewer(palette = "Dark2") +
+  theme_minimal() +
+  labs(title = "Distribution of Work Modes", fill = "Work Mode") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    legend.title = element_text(size = 12, face = "bold"),
+    legend.text = element_text(size = 10)
+  ) +
+  geom_text(
+    aes(label = paste0(
+      "Count: ", Count, "\n", round(Count / sum(Count) * 100, 1), "%"
+    )),
+    position = position_stack(vjust = 0.5),
+    size = 3,
+    color = "white",
+    fontface = "bold"
+  )
+
+
+```
+
+This process results in a clear pie chart that illustrates the distribution of work modes, represented by different segments and percentages, among survey respondents.
+Our results show some interesting conclusions, from all the attendants, the majority was working remotely, while a another substantial amount was working Hybridly. Remote work is slowly but surely taking the world by storm and we can expect the numbers to only be bigger in the upcoming years.
+
+## Educational Attainment
+
+In this analysis, we aim to understand the educational attainment of the respondents. The process will be conducted in three steps: data analytics, data transformation, and data visualization.
+
+**Step 1: Data Analytics**
+
+```{r}
+# Remove rows where the 'RemoteWork' field is NA or blank
+MyData <- MyData[!is.na(MyData$RemoteWork) & MyData$RemoteWork != "",]
+```
+
+**Step 2: Data Transformation**
+
+```{r}
+# Convert to a data frame
+data <- as.data.frame(edlevel_counts)
+names(data) <- c("category", "count")
+
+# Compute percentages
+data$fraction <- data$count / sum(data$count)
+
+# Compute the cumulative percentages (top of each rectangle)
+data$ymax <- cumsum(data$fraction)
+
+# Compute the bottom of each rectangle
+data$ymin <- c(0, head(data$ymax, n = -1))
+
+# Compute label position
+data$labelPosition <- (data$ymax + data$ymin) / 2
+
+# Compute a good label
+data$label <- paste0(data$category, "\n value: ", data$count)
+
+```
+
+**Step 3: Data Visualization**
+
+```{r}
+# Create a circular stacked bar plot to represent the distribution of educational levels
+ggplot(data, aes(
+  fill = category,
+  ymax = ymax,
+  ymin = ymin,
+  xmax = 4,
+  xmin = 3
+)) +
+  geom_rect() +
+  scale_fill_brewer(palette = "Set1") +
+  coord_polar(theta = "y") +
+  xlim(c(-1, 4)) +
+  theme_minimal()
+  
+
+```
+
+This process generates a circular stacked bar plot displaying the distribution of educational attainment based on the share of each category among survey respondents.
+
+## How did People Learn to Code By age range
+
+```{r}
+# Split LearnCode into multiple rows
+MyData <- MyData %>%
+  mutate(LearnCode = str_split(LearnCode, ";")) %>%
+  unnest(LearnCode)
+
+MyData <- MyData %>% drop_na(LearnCode, Age)
+
+# Create the plot
+ggplot(MyData, aes(x = LearnCode)) +
+  geom_bar(aes(fill = Age), position = "dodge") +
+  labs(x = "Learning Method", y = "Number of Respondents", fill = "Age Range") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  coord_flip()  # Makes the bars horizontal; remove this if you want vertical bars
+```
+
+## Years of Professional Coding vs Total salary per year
+
+In this analysis, we aim to understand the relationship between years of professional coding and total salary per year. The process will be conducted in three main steps: data cleaning, data transformation, and data visualization.
+
+
+**Step 1: Data Cleaning**
+
+```{r}
+# Select relevant columns and remove missing values
+ProExpVsSalary <- MyData %>%
+  select(YearsCodePro, Currency, CompTotal) %>%
+  na.omit()
+
+# Extract currency abbreviations and split the data by currency
+ProExpVsSalary <- ProExpVsSalary %>%
+  mutate(abbreviation = str_extract(Currency, "\\b[A-Z]{3}\\b"))
+
+# Split data into different datasets by currency
+currency_datasets <- split(ProExpVsSalary, ProExpVsSalary$abbreviation)
+```
+
+**Step 2: Data Transformation**
+
+```{r, warning = FALSE}
+# Define a function to convert variables to numeric and remove outliers
+process_dataset <- function(dataset) {
+  dataset$YearsCodePro <- as.numeric(dataset$YearsCodePro)
+  dataset$CompTotal <- as.numeric(dataset$CompTotal)
+  Q1 <- quantile(dataset$CompTotal, 0.25)
+  Q3 <- quantile(dataset$CompTotal, 0.75)
+  IQR <- Q3 - Q1
+  dataset <-
+    subset(dataset, CompTotal > (Q1 - 1.5 * IQR) &
+             CompTotal < (Q3 + 1.5 * IQR))
+  return(dataset)
+}
+
+# Apply the process_dataset function to each currency dataset
+euro_dataset <- process_dataset(currency_datasets$EUR)
+usd_dataset <- process_dataset(currency_datasets$USD)
+gbp_dataset <- process_dataset(currency_datasets$GBP)
+jpy_dataset <- process_dataset(currency_datasets$JPY)
+cny_dataset <- process_dataset(currency_datasets$CNY)
+
+```
+
+**Step 3: Data Visualization**
+
+```{r, warning = FALSE, echo=FALSE}
+# Define a function to create a hexbin plot for each dataset
+create_plot <- function(dataset, x_var, y_var, currency) {
+  x_range <- range(dataset[[x_var]], na.rm = TRUE)
+  y_range <- range(dataset[[y_var]], na.rm = TRUE)
+  
+  ggplot(dataset, aes_string(x = x_var, y = y_var)) +
+    geom_hex(bins = 50) +
+    labs(title = paste(
+      "Years of Professional Coding vs Total Salary per Year (",
+      currency,
+      ")"
+    )) +
+    xlab("Years of Professional Coding") +
+    ylab(paste("Total Salary per Year (", currency, ")")) +
+    scale_x_continuous(breaks = pretty(x_range, n = 10)) +
+    scale_y_continuous(breaks = pretty(y_range, n = 10)) +
+    theme(
+      axis.title.x = element_text(size = 12),
+      axis.title.y = element_text(size = 12),
+      axis.text.x = element_text(size = 10, angle = 45),
+      axis.text.y = element_text(size = 10)
+    )
+}
+
+# Apply the create_plot function to each dataset
+create_plot(euro_dataset, "YearsCodePro", "CompTotal", "Euro")
+create_plot(usd_dataset, "YearsCodePro", "CompTotal", "USD")
+create_plot(gbp_dataset, "YearsCodePro", "CompTotal", "GBP")
+create_plot(jpy_dataset, "YearsCodePro", "CompTotal", "JPY")
+create_plot(cny_dataset, "YearsCodePro", "CompTotal", "CNY")
+
+```
+
+
+In the first step, we select necessary columns and remove missing values. Then we split the dataset by currency. In the second step, we convert variables to numeric and remove outliers from each currency-specific dataset. Lastly, we create hexbin plots for each dataset to visualize the relationship between years of professional coding and total salary per year for each currency.
+
+## Conclusion
+
+The comprehensive analysis performed on the dataset provided several insightful findings related to the software industry. 
+
+Firstly, we found that the top programming languages being used were Javascript, HTML and SQL and those desired to be learned by developers were Javascript, Python and TypeScript. This indicates a shift in trend towards Python and Typescript wanted to learned more. We can also notice that Javascript is the top language still in both language people know and language people want to know. That's a useful insight. These insights can guide aspiring coders to focus their learning and for organizations to make strategic decisions about adopting newer languages.
+
+Secondly, we observed that Remote work was the most prevalent mode of work among developers. This suggests that after COVID, remote work has solidified itself and more workers than ever are doing remote work.
+
+Our analysis of educational backgrounds revealed that a bachelor degree was the most common among developers. This suggest that even though most of the developers have a bachelor degree, coding and learning how to code in general can come in any shape or form.
+
+These insights collectively provide a holistic understanding of the developer landscape. They can guide various stakeholders such as students, developers, educators, and organizations in making informed decisions.
+
+Overall, the data provides a rich foundation for further exploration and offers a wealth of insights about the current state of the software industry.
+
+
+
